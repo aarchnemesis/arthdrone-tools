@@ -1,6 +1,6 @@
 # Arthdrone Tools v1.0
 
-Ferramenta interna em Python para automação de **S&R** (Sort & Remove) em inspeções de pás eólicas com drones DJI. Otimiza o fluxo entre ArtDrone e Arthnex/Clobotics: ordena fotos, corrige Z zerado, processa JSON, converte CSVs, organiza pastas. Reduz tempo de processamento de 18 para 9 minutos por aerogerador, dobrando produtividade diária.
+Ferramenta interna em Python para automação de **S&R** (Sort & Remove) em inspeções de pás eólicas com drones DJI. Otimiza o fluxo entre ArtDrone e Arthnex: ordena fotos, corrige Z zerado, processa JSON, converte CSVs, organiza pastas. Reduz tempo de processamento de 18 para 9 minutos por aerogerador, dobrando produtividade diária.
 
 Desenvolvida para uso interno, com foco em precisão e velocidade. Modular (cada função em arquivo separado), bilíngue (PT-BR/EN), com colorama para visual em terminais compatíveis.
 
@@ -8,7 +8,7 @@ Desenvolvida para uso interno, com foco em precisão e velocidade. Modular (cada
 - Versão: 1.0 
 - Uso principal: Windows (equipe de inspeção)
 - Acesso: Repositório privado (somente colaboradores convidados)
-- Binário Windows: Disponível na Release v2.1 (zip com exe + lib)
+- Binário Windows: Disponível na Release v1.0 (zip com exe + lib)
 
 ## Como usar (para o usuário final)
 
@@ -67,7 +67,7 @@ Mostra este guia completo.
 
 ## Download e Uso
 
-- Baixe o zip da Release v2.1 (pasta com main.exe + lib)
+- Baixe o zip da Release v1.0 (pasta com main.exe + lib)
 - Descompacte em qualquer lugar
 - Clique em main.exe → janela preta abre com menu
 - Teste em PC sem Python: funciona sem instalação.
