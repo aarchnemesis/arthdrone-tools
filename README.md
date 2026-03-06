@@ -72,11 +72,5 @@ Mostra este guia completo.
 - Clique em main.exe → janela preta abre com menu
 - Teste em PC sem Python: funciona sem instalação.
 
-## GitHub / Acesso
-
-- Repositório privado: só colaboradores convidados acessam o código fonte.
-- Releases: binário zipado para Windows (acesso restrito ao repo).
-- Contato: mensagem direta ou issue no repo (acesso restrito).
-
 Desenvolvido por Pedro Oliveira (@aarchnemesis)  
 Última atualização: Março 2026
