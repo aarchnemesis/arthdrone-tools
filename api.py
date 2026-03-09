@@ -1,0 +1,122 @@
+# api.py - Bridge entre o React (frontend) e o Python (backend)
+
+import threading
+import webview
+from api_functions import (
+    organizar_imagens_api,
+    converter_csv_api,
+    carregar_fotos_gps_api,
+    extrair_gps_z_api,
+    process_json_api,
+    organizar_fotos_api,
+)
+
+
+class ArthdroneAPI:
+    def __init__(self, window_ref):
+        self._window = window_ref
+
+    # ─── Utilitário interno ───────────────────────────────────────────────────
+
+    def _emit(self, event: str, payload: dict):
+        import json
+        safe = json.dumps(payload).replace("'", "\\'")
+        self._window.evaluate_js(
+            f"window.dispatchEvent(new CustomEvent('{event}', {{detail: {safe}}}))"
+        )
+
+    def _log(self, msg: str, type_: str = "info"):
+        self._emit("arthlog", {"text": msg, "type": type_})
+
+    # ─── Seleção de arquivos/pastas ──────────────────────────────────────────
+
+    def pick_file(self):
+        """Abre diálogo nativo para selecionar arquivo. Retorna caminho ou ''."""
+        result = self._window.create_file_dialog(
+            webview.OPEN_DIALOG,
+            allow_multiple=False,
+            file_types=('Todos os arquivos (*.*)',)
+        )
+        return result[0] if result else ""
+
+    def pick_folder(self):
+        """Abre diálogo nativo para selecionar pasta. Retorna caminho ou ''."""
+        try:
+            result = self._window.create_file_dialog(webview.FileDialog.FOLDER)
+        except AttributeError:
+            result = self._window.create_file_dialog(webview.FOLDER_DIALOG)
+        return result[0] if result else ""
+
+    # ─── Módulo 1 — Organizar Imagens ────────────────────────────────────────
+
+    def organizar_imagens(self, csv_path: str, fotos_dir: str, mode: str, dry_run: bool):
+        def run():
+            try:
+                organizar_imagens_api(csv_path=csv_path, fotos_dir=fotos_dir,
+                                      mode=mode, dry_run=dry_run, log_fn=self._log)
+            except Exception as e:
+                self._log(f"Erro inesperado: {e}", "error")
+            finally:
+                self._emit("arthdone", {})
+        threading.Thread(target=run, daemon=True).start()
+
+    # ─── Módulo 2 — Converter CSV ────────────────────────────────────────────
+
+    def converter_csv(self, csv_path: str, gerar_xlsx: bool):
+        def run():
+            try:
+                converter_csv_api(csv_path=csv_path, gerar_xlsx=gerar_xlsx, log_fn=self._log)
+            except Exception as e:
+                self._log(f"Erro inesperado: {e}", "error")
+            finally:
+                self._emit("arthdone", {})
+        threading.Thread(target=run, daemon=True).start()
+
+    # ─── Módulo 3 — GPS + Z Relativo ─────────────────────────────────────────
+
+    def carregar_fotos_gps(self, fotos_dir: str):
+        """Etapa 1: varre pasta e retorna lista de fotos com GPS para o JS."""
+        def run():
+            try:
+                fotos = carregar_fotos_gps_api(pasta=fotos_dir, log_fn=self._log)
+            except Exception as e:
+                self._log(f"Erro inesperado: {e}", "error")
+                fotos = []
+            finally:
+                self._emit("gps_fotos_loaded", {"fotos": fotos})
+        threading.Thread(target=run, daemon=True).start()
+
+    def extrair_gps_z(self, fotos_dir: str, raiz_nome: str):
+        """Etapa 2: gera CSV usando a foto raiz escolhida pelo usuario."""
+        def run():
+            try:
+                extrair_gps_z_api(pasta=fotos_dir, raiz_nome=raiz_nome, log_fn=self._log)
+            except Exception as e:
+                self._log(f"Erro inesperado: {e}", "error")
+            finally:
+                self._emit("arthdone", {})
+        threading.Thread(target=run, daemon=True).start()
+
+    # ─── Módulo 4 — Processar JSON ───────────────────────────────────────────
+
+    def processar_json(self, json_path: str):
+        def run():
+            try:
+                process_json_api(json_path=json_path, log_fn=self._log)
+            except Exception as e:
+                self._log(f"Erro inesperado: {e}", "error")
+            finally:
+                self._emit("arthdone", {})
+        threading.Thread(target=run, daemon=True).start()
+
+    # ─── Módulo 5 — Organizar Fotos ──────────────────────────────────────────
+
+    def organizar_fotos(self, json_path: str, fotos_dir: str):
+        def run():
+            try:
+                organizar_fotos_api(json_path=json_path, source_folder=fotos_dir, log_fn=self._log)
+            except Exception as e:
+                self._log(f"Erro inesperado: {e}", "error")
+            finally:
+                self._emit("arthdone", {})
+        threading.Thread(target=run, daemon=True).start()
