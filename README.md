@@ -35,7 +35,7 @@ Desenvolvida para uso interno, com foco em precisão e velocidade. Modular, bil�
 ## Módulos
 
 ### 1 — Organizar Imagens S&R
-Lê o CSV exportado da plataforma nex. Para cada linha, localiza a foto correspondente na pasta selecionada (busca em subpastas, case-insensitive).
+Lê o CSV exportado da plataforma Arthnex. Para cada linha, localiza a foto correspondente na pasta selecionada (busca em subpastas, case-insensitive).
 
 - **Modo Platform (P):** renomeia a foto para o formato da plataforma com metadados embutidos — `Blade_Z_Order_mm_px.jpg`
 - **Modo Recovery (R):** mantém o nome DJI original
