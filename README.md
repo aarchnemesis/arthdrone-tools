@@ -1,6 +1,6 @@
 # Arthdrone Tools v2.1
 
-Ferramenta interna em Python para automação de **S&R** (Sort & Remove) em inspeções de pás eólicas com drones DJI. Otimiza o fluxo entre ArtDrone e Artnex: organiza fotos, corrige Z zerado, processa JSON, converte CSVs, organiza pastas.
+Ferramenta interna em Python para automação de **S&R** (Sort & Remove) em inspeções de pás eólicas com drones DJI. Otimiza o fluxo entre ArthDrone e Arthnex: organiza fotos, corrige Z zerado, processa JSON, converte CSVs, organiza pastas.
 
 **Reduz o tempo de processamento de 18 para 9 minutos por aerogerador, dobrando a produtividade diária.**
 
@@ -35,7 +35,7 @@ Desenvolvida para uso interno, com foco em precisão e velocidade. Modular, bil�
 ## Módulos
 
 ### 1 — Organizar Imagens S&R
-Lê o CSV exportado da plataforma Artnex. Para cada linha, localiza a foto correspondente na pasta selecionada (busca em subpastas, case-insensitive).
+Lê o CSV exportado da plataforma Arthnex. Para cada linha, localiza a foto correspondente na pasta selecionada (busca em subpastas, case-insensitive).
 
 - **Modo Platform (P):** renomeia a foto para o formato da plataforma com metadados embutidos — `Blade_Z_Order_mm_px.jpg`
 - **Modo Recovery (R):** mantém o nome DJI original
@@ -46,10 +46,10 @@ Lê o CSV exportado da plataforma Artnex. Para cada linha, localiza a foto corre
 Converte o separador do CSV de ponto-e-vírgula para vírgula, tornando o arquivo compatível com Excel e outras ferramentas. Gera opcionalmente um arquivo `.xlsx` na mesma pasta do CSV original.
 
 ### 3 — GPS + Z Relativo
-Extrai a altitude GPS do EXIF de cada foto na pasta. Após carregar a lista, o usuário seleciona manualmente a foto da raiz da pá (Z=0) — necessário porque o voo pode ser feito em qualquer sentido (root-to-tip ou tip-to-root). Gera `gps_z_relativo.csv` com a progressão em mm a partir da raiz escolhida.
+Extrai a altitude GPS do EXIF de cada foto na pasta. Após carregar a lista, o usuário seleciona manualmente a foto da raiz da pá (Z=0) — necessário porque o voo pode ser feito em qualquer sentido (root-to-tip ou tip-to-root). Gera `gps_z_relativo.csv` com a progressão em mm a pir da raiz escolhida.
 
 ### 4 — Processar JSON
-Lê o `photo_data.json` gerado pelo ArtDrone e gera os CSVs para o Image Uploader. Ordena as fotos por timestamp DJI e aplica inversão TipToRoot para as regiões SS e PS. Gera um CSV por pá e o arquivo `photo_data_matched.csv` com a ligação completa entre metadados e caminhos reais das fotos.
+Lê o `photo_data.json` gerado pelo ArthDrone e gera os CSVs para o Image Uploader. Ordena as fotos por timestamp DJI e aplica inversão TipToRoot para as regiões SS e PS. Gera um CSV por pá e o arquivo `photo_data_matched.csv` com a ligação completa entre metadados e caminhos reais das fotos.
 
 ### 5 — Organizar Fotos
 Usa o JSON como mapa para criar as pastas A/B/C e copiar as fotos brutas do SD card para os caminhos corretos antes de rodar o Módulo 4.
