@@ -5,6 +5,28 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [2.2] — 2026-03-12
+
+### Adicionado
+- Filtro de tipo de arquivo nos diálogos de seleção — campos CSV aceitam apenas `.csv`, campos JSON aceitam apenas `.json`
+- Botão "Abrir pasta" aparece ao lado de "Concluído!" abrindo o OUTPUT diretamente no Explorer
+- Persistência do tema claro/escuro entre sessões
+- Persistência dos últimos caminhos usados por módulo entre sessões
+- Atalho `Ctrl+Enter` para executar o módulo atual
+- Geração de `missing_data_YYYY-MM-DD_HHMMSS.txt` na pasta OUTPUT quando há arquivos não encontrados nos módulos 1 e 5
+- Validação das colunas obrigatórias do CSV antes de executar o módulo 1
+
+### Alterado
+- Log dos módulos 1 e 5 agora é silencioso durante execução — exibe apenas resumo final: `X/Y imagens organizadas · Z não encontradas` e caminho do OUTPUT
+- Documentação do módulo 4 atualizada com requisito de estrutura de pastas (JSON deve estar na mesma pasta que A, B e C)
+
+### Corrigido
+- Caracteres inválidos no Windows (`*`, `?`, `:` etc.) no blade SN agora são sanitizados também no nome do CSV gerado pelo módulo 4 — correção do mesmo bug que já havia sido tratado no módulo 1
+- `useEffect` do atalho `Ctrl+Enter` movido para após a declaração de `handleRun`, corrigindo `ReferenceError: Cannot access before initialization` que causava tela branca após build
+
+[2.2]: https://github.com/aarchnemesis/arthdrone-tools/releases/tag/v2.2
+
+---
 ## [2.1] — 2026-03-08
 
 ### Adicionado
