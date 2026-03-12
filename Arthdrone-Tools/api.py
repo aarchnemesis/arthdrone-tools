@@ -30,12 +30,20 @@ class ArthdroneAPI:
 
     # ─── Seleção de arquivos/pastas ──────────────────────────────────────────
 
-    def pick_file(self):
-        """Abre diálogo nativo para selecionar arquivo. Retorna caminho ou ''."""
+    def pick_file(self, file_type: str = "all"):
+        """Abre diálogo nativo para selecionar arquivo com filtro por tipo.
+        file_type: 'csv' | 'json' | 'all'
+        """
+        type_map = {
+            "csv":  ("CSV (*.csv)", "*.csv"),
+            "json": ("JSON (*.json)", "*.json"),
+            "all":  ("Todos os arquivos (*.*)", "*.*"),
+        }
+        label, pattern = type_map.get(file_type, type_map["all"])
         result = self._window.create_file_dialog(
             webview.OPEN_DIALOG,
             allow_multiple=False,
-            file_types=('Todos os arquivos (*.*)',)
+            file_types=(f"{label}",)
         )
         return result[0] if result else ""
 
@@ -46,6 +54,17 @@ class ArthdroneAPI:
         except AttributeError:
             result = self._window.create_file_dialog(webview.FOLDER_DIALOG)
         return result[0] if result else ""
+
+    def open_folder(self, path: str):
+        """Abre a pasta no Explorer do Windows."""
+        import subprocess, os
+        try:
+            if os.path.isdir(path):
+                subprocess.Popen(f'explorer "{path}"')
+            elif os.path.isfile(path):
+                subprocess.Popen(f'explorer /select,"{path}"')
+        except Exception:
+            pass
 
     # ─── Módulo 1 — Organizar Imagens ────────────────────────────────────────
 

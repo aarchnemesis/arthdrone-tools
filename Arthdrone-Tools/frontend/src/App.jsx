@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import ARTHDRONE_ICON from './icon.js';
 
 // ─── Ícones SVG ───────────────────────────────────────────────────────────────
@@ -18,6 +18,7 @@ const Icons = {
   info:     (c) => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>,
   sun:      ()  => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>,
   moon:     ()  => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>,
+  opendir:  (c) => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>,
 };
 
 // ─── Traduções ────────────────────────────────────────────────────────────────
@@ -37,7 +38,7 @@ const translations = {
         title: "Organizar Imagens S&R",
         desc: "Le o CSV da plataforma e organiza as fotos em OUTPUT/Blade/Region",
         inputs: [
-          { label: "Arquivo CSV",    placeholder: "Clique para selecionar o CSV da plataforma", type: "file"   },
+          { label: "Arquivo CSV",    placeholder: "Clique para selecionar o CSV da plataforma", type: "file",   fileType: "csv"    },
           { label: "Pasta de Fotos", placeholder: "Clique para selecionar a pasta com as fotos", type: "folder" },
         ],
         options: [
@@ -50,7 +51,7 @@ const translations = {
         title: "Converter CSV",
         desc: "Converte CSV separado por ; para , compativel com Excel",
         inputs: [
-          { label: "Arquivo CSV", placeholder: "Clique para selecionar o CSV", type: "file" },
+          { label: "Arquivo CSV", placeholder: "Clique para selecionar o CSV", type: "file", fileType: "csv" },
         ],
         options: [
           { label: "Gerar .xlsx", choices: ["Nao", "Sim"] },
@@ -70,7 +71,7 @@ const translations = {
         title: "Processar JSON",
         desc: "Le JSON do drone e gera CSVs para o Image Uploader com sequencia correta",
         inputs: [
-          { label: "Arquivo JSON", placeholder: "Clique para selecionar o arquivo JSON", type: "file" },
+          { label: "Arquivo JSON", placeholder: "Clique para selecionar o arquivo JSON", type: "file", fileType: "json" },
         ],
         options: [],
         action: "Processar JSON",
@@ -79,7 +80,7 @@ const translations = {
         title: "Organizar Fotos pelo JSON",
         desc: "Cria pastas A/B/C e copia as fotos brutas para os caminhos definidos no JSON",
         inputs: [
-          { label: "Arquivo JSON",   placeholder: "Clique para selecionar o arquivo JSON",       type: "file"   },
+          { label: "Arquivo JSON",   placeholder: "Clique para selecionar o arquivo JSON",       type: "file",   fileType: "json"   },
           { label: "Pasta de Fotos", placeholder: "Clique para selecionar a pasta com as fotos", type: "folder" },
         ],
         options: [],
@@ -100,6 +101,7 @@ const translations = {
     loading: "Lendo...",
     processing: "Processando...",
     done: "Concluido!",
+    open_output: "Abrir pasta",
   },
   en: {
     title: "ARTHDRONE TOOLS", subtitle: "Wind Blade S&R Automation",
@@ -116,7 +118,7 @@ const translations = {
         title: "Organize S&R Images",
         desc: "Reads the platform CSV and organizes photos into OUTPUT/Blade/Region",
         inputs: [
-          { label: "CSV File",      placeholder: "Click to select the platform CSV file", type: "file"   },
+          { label: "CSV File",      placeholder: "Click to select the platform CSV file", type: "file",   fileType: "csv"    },
           { label: "Photos Folder", placeholder: "Click to select the folder with photos", type: "folder" },
         ],
         options: [
@@ -129,7 +131,7 @@ const translations = {
         title: "Convert CSV",
         desc: "Converts semicolon-separated CSV to comma-separated, compatible with Excel",
         inputs: [
-          { label: "CSV File", placeholder: "Click to select the CSV file", type: "file" },
+          { label: "CSV File", placeholder: "Click to select the CSV file", type: "file", fileType: "csv" },
         ],
         options: [
           { label: "Generate .xlsx", choices: ["No", "Yes"] },
@@ -149,7 +151,7 @@ const translations = {
         title: "Process JSON",
         desc: "Reads drone JSON and generates CSVs for Image Uploader with correct sequence",
         inputs: [
-          { label: "JSON File", placeholder: "Click to select the JSON file", type: "file" },
+          { label: "JSON File", placeholder: "Click to select the JSON file", type: "file", fileType: "json" },
         ],
         options: [],
         action: "Process JSON",
@@ -158,7 +160,7 @@ const translations = {
         title: "Organize Photos via JSON",
         desc: "Creates A/B/C folders and copies raw photos to paths defined in JSON",
         inputs: [
-          { label: "JSON File",     placeholder: "Click to select the JSON file",          type: "file"   },
+          { label: "JSON File",     placeholder: "Click to select the JSON file",          type: "file",   fileType: "json"   },
           { label: "Photos Folder", placeholder: "Click to select the folder with photos", type: "folder" },
         ],
         options: [],
@@ -179,6 +181,7 @@ const translations = {
     loading: "Reading...",
     processing: "Processing...",
     done: "Done!",
+    open_output: "Open folder",
   },
 };
 
@@ -187,7 +190,7 @@ const docContent = {
     { title: "1 — Organizar Imagens S&R", body: "Le o CSV exportado da plataforma Artnex. Para cada linha, localiza a foto correspondente na pasta selecionada (busca em subpastas). Modo Platform renomeia a foto para o formato da plataforma com os metadados embutidos. Modo Recovery mantem o nome DJI original. Dry-run simula o processo sem copiar nenhum arquivo — util para verificar quantas fotos serao encontradas antes de executar." },
     { title: "2 — Converter CSV",          body: "Converte o separador do CSV de ponto-e-virgula para virgula, tornando o arquivo compativel com Excel e outras ferramentas. Opcionalmente gera tambem um arquivo .xlsx na mesma pasta do CSV original." },
     { title: "3 — GPS + Z Relativo",       body: "Extrai a altitude GPS do EXIF de cada foto na pasta. Apos carregar a lista, selecione manualmente a foto da raiz da pa (Z=0) — necessario porque o voo pode ser feito em qualquer sentido (root-to-tip ou tip-to-root). Gera o arquivo gps_z_relativo.csv com a progressao em mm a partir da raiz escolhida." },
-    { title: "4 — Processar JSON",         body: "Le o arquivo photo_data.json gerado pelo ArtDrone e gera os CSVs para o Image Uploader. Ordena as fotos por timestamp DJI e aplica inversao TipToRoot para as regioes SS e PS. Gera um CSV por pá e o arquivo photo_data_matched.csv com a ligacao completa entre metadados e caminhos reais das fotos." },
+    { title: "4 — Processar JSON",         body: "Le o arquivo photo_data.json gerado pelo ArtDrone e gera os CSVs para o Image Uploader. Ordena as fotos por timestamp DJI e aplica inversao TipToRoot para as regioes SS e PS. Gera um CSV por pa e o arquivo photo_data_matched.csv com a ligacao completa entre metadados e caminhos reais das fotos. IMPORTANTE: o arquivo JSON deve estar na mesma pasta que as subpastas A, B e C — o modulo usa a pasta do JSON como raiz para localizar as fotos e salvar os CSVs gerados." },
     { title: "5 — Organizar Fotos",        body: "Usa o JSON como mapa para criar as pastas A/B/C e copiar as fotos brutas do SD card para os caminhos corretos antes de rodar o Modulo 4." },
     { title: "Observacoes Gerais",         body: "Os campos de selecao de arquivo e pasta funcionam via clique — o dialogo nativo do Windows sera aberto. O OUTPUT e sempre criado na mesma pasta do CSV. Caracteres especiais nos nomes de blade (como *) sao removidos automaticamente para compatibilidade com o sistema de arquivos do Windows." },
   ],
@@ -195,7 +198,7 @@ const docContent = {
     { title: "1 — Organize S&R Images",   body: "Reads the CSV exported from the Artnex platform. For each row, it finds the corresponding photo in the selected folder (searches subfolders). Platform mode renames the photo to the platform format with embedded metadata. Recovery mode keeps the original DJI name. Dry-run simulates the process without copying any files — useful to verify how many photos will be found before running." },
     { title: "2 — Convert CSV",           body: "Converts the CSV separator from semicolon to comma, making the file compatible with Excel and other tools. Optionally generates an .xlsx file in the same folder as the original CSV." },
     { title: "3 — GPS + Relative Z",      body: "Extracts GPS altitude from each photo's EXIF data in the folder. After loading the list, manually select the root photo (Z=0) — required because the flight can be done in any direction (root-to-tip or tip-to-root). Generates gps_z_relativo.csv with progression in mm from the selected root." },
-    { title: "4 — Process JSON",          body: "Reads the photo_data.json file generated by ArtDrone and generates CSVs for the Image Uploader. Sorts photos by DJI timestamp and applies TipToRoot inversion for SS and PS regions. Generates one CSV per blade and the photo_data_matched.csv file with the complete link between metadata and actual file paths." },
+    { title: "4 — Process JSON",          body: "Reads the photo_data.json file generated by ArtDrone and generates CSVs for the Image Uploader. Sorts photos by DJI timestamp and applies TipToRoot inversion for SS and PS regions. Generates one CSV per blade and the photo_data_matched.csv file with the complete link between metadata and actual file paths. IMPORTANT: the JSON file must be in the same folder as the A, B and C subfolders — the module uses the JSON's parent folder as root to locate photos and save the generated CSVs." },
     { title: "5 — Organize Photos",       body: "Uses the JSON as a map to create A/B/C folders and copy raw SD card photos to the correct paths before running Module 4." },
     { title: "General Notes",             body: "File and folder selection fields work via click — the native Windows dialog will open. OUTPUT is always created in the same folder as the CSV. Special characters in blade names (such as *) are automatically removed for Windows filesystem compatibility." },
   ],
@@ -219,11 +222,17 @@ export default function ArthdroneTools() {
   const [logs, setLogs]           = useState([]);
   const [running, setRunning]     = useState(false);
   const [ran, setRan]             = useState(false);
-  const [darkMode, setDarkMode]   = useState(false);
-  const [progress, setProgress]   = useState(0); // 0-100, -1 = indeterminado
+  const [darkMode, setDarkMode]   = useState(() => {
+    try { return JSON.parse(sessionStorage.getItem("adark") || "false"); } catch { return false; }
+  });
+  const [progress, setProgress]   = useState(0);
   const [gpsLoading, setGpsLoading] = useState(false);
   const [gpsFotos, setGpsFotos]     = useState([]);
   const [gpsRaiz, setGpsRaiz]       = useState("");
+  const [lastOutput, setLastOutput] = useState(""); // caminho do ultimo OUTPUT gerado
+  const [lastPaths, setLastPaths]   = useState(() => {
+    try { return JSON.parse(sessionStorage.getItem("alastpaths") || "{}"); } catch { return {}; }
+  });
 
   const D = darkMode ? {
     bg: "#1a1d23", bgDeep: "#14161b", bgPanel: "#1e2128", bgCard: "#22252e",
@@ -244,15 +253,27 @@ export default function ArthdroneTools() {
   const T = translations[lang];
   const module = T.fields[active];
 
+  // persiste tema entre sessões
+  useEffect(() => {
+    try { sessionStorage.setItem("adark", JSON.stringify(darkMode)); } catch {}
+  }, [darkMode]);
+
+  // persiste últimos caminhos entre sessões
+  useEffect(() => {
+    try { sessionStorage.setItem("alastpaths", JSON.stringify(lastPaths)); } catch {}
+  }, [lastPaths]);
+
+
   const toggleLang = () => {
     setLang(l => l === "pt" ? "en" : "pt");
     setActive(1); setOptions({}); setFilePaths({});
-    setLogs([]); setRan(false); setGpsFotos([]); setGpsRaiz(""); setProgress(0);
+    setLogs([]); setRan(false); setGpsFotos([]); setGpsRaiz(""); setProgress(0); setLastOutput("");
   };
 
   const switchModule = (id) => {
     setActive(id); setLogs([]); setRan(false);
-    setGpsFotos([]); setGpsRaiz(""); setProgress(0);
+    setGpsFotos([]); setGpsRaiz(""); setProgress(0); setLastOutput("");
+    setFilePaths(lastPaths[id] || {});
   };
 
   // Extrai progresso de mensagens de log (ex: "45/120 fotos")
@@ -270,6 +291,9 @@ export default function ArthdroneTools() {
         setLogs(prev => [...prev, e.detail]);
         const p = parseProgress(e.detail.text || "");
         if (p >= 0) setProgress(p);
+        // detecta caminho de output nas mensagens "Output: C:\..."
+        const outMatch = (e.detail.text || "").match(/^Output:\s*(.+)$/i);
+        if (outMatch) setLastOutput(outMatch[1].trim());
       };
 
       const safetyTimer = setTimeout(() => {
@@ -317,13 +341,14 @@ export default function ArthdroneTools() {
 
   const handlePickInput = async (inp) => {
     if (typeof window.pywebview === "undefined") {
-      setFilePaths(p => ({ ...p, [inp.label]: `C:\\Demo\\arquivo.${inp.type === "file" ? "csv" : ""}` }));
+      const demo = `C:\\Demo\\arquivo.${inp.fileType || "csv"}`;
+      setFilePaths(p => { const n = { ...p, [inp.label]: demo }; setLastPaths(lp => ({ ...lp, [active]: n })); return n; });
       return;
     }
     const path = inp.type === "folder"
       ? await window.pywebview.api.pick_folder()
-      : await window.pywebview.api.pick_file();
-    if (path) setFilePaths(p => ({ ...p, [inp.label]: path }));
+      : await window.pywebview.api.pick_file(inp.fileType || "all");
+    if (path) setFilePaths(p => { const n = { ...p, [inp.label]: path }; setLastPaths(lp => ({ ...lp, [active]: n })); return n; });
   };
 
   const handleCarregarGps = () => {
@@ -356,6 +381,15 @@ export default function ArthdroneTools() {
   const logColor = (t) => ({ success: D.success, warning: D.warning, error: D.error, info: D.info }[t] || D.info);
 
   const canRun = !running && (active !== 3 || (gpsRaiz && gpsFotos.length > 0));
+
+  // Ctrl+Enter — colocado após handleRun para evitar referência antes de inicialização
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.ctrlKey && e.key === "Enter" && !running && module.action) handleRun();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [running, active, filePaths, options, gpsRaiz, gpsFotos]);
 
   return (
     <div style={{ fontFamily: "'Plus Jakarta Sans', 'Segoe UI', sans-serif", background: D.bg, width: "100vw", height: "100vh", display: "flex", flexDirection: "column", overflow: "hidden", color: D.textPrimary, transition: "background 0.3s, color 0.3s" }}>
@@ -474,7 +508,7 @@ export default function ArthdroneTools() {
           <div style={{ width:1, height:16, background:D.border }} />
           <div style={{ display:"flex", alignItems:"center", gap:5 }}>
             <div style={{ width:6, height:6, borderRadius:"50%", background:"#22c55e", boxShadow:"0 0 6px #22c55e66" }} />
-            <span style={{ fontSize:10, color:D.textMuted, fontWeight:500 }}>v2.1</span>
+            <span style={{ fontSize:10, color:D.textMuted, fontWeight:500 }}>v2.2</span>
           </div>
           <button onClick={toggleLang} style={{ background:D.accentSofter, border:`1px solid ${D.border}`, borderRadius:6, padding:"4px 11px", color:D.accent, fontFamily:"inherit", fontSize:11, fontWeight:600, cursor:"pointer", letterSpacing:"0.08em", transition:"all 0.15s" }}>
             {lang === "pt" ? "PT → EN" : "EN → PT"}
@@ -606,8 +640,16 @@ export default function ArthdroneTools() {
                         {running ? T.processing : module.action}
                       </button>
                       {ran && !running && (
-                        <div style={{ display:"flex", alignItems:"center", gap:6, color:D.success, fontSize:12.5, fontWeight:600 }}>
-                          {Icons.check(D.success)}{T.done}
+                        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                          <div style={{ display:"flex", alignItems:"center", gap:6, color:D.success, fontSize:12.5, fontWeight:600 }}>
+                            {Icons.check(D.success)}{T.done}
+                          </div>
+                          {lastOutput && typeof window.pywebview !== "undefined" && (
+                            <button onClick={() => window.pywebview.api.open_folder(lastOutput)}
+                              style={{ display:"flex", alignItems:"center", gap:5, padding:"6px 12px", borderRadius:6, border:`1px solid ${D.border}`, background:"transparent", color:D.textSecond, fontFamily:"inherit", fontSize:11.5, fontWeight:500, cursor:"pointer", transition:"all 0.15s" }}>
+                              {Icons.opendir(D.textSecond)}{T.open_output}
+                            </button>
+                          )}
                         </div>
                       )}
                     </div>

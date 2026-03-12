@@ -37,6 +37,21 @@ def _build_image_cache(folder: Path, log_fn) -> dict:
 
 # ─── Módulo 1 — Organizar Imagens ─────────────────────────────────────────────
 
+def _write_missing_file(output_dir: Path, missing: list, modulo: str):
+    """Gera missing_data_YYYY-MM-DD_HHMMSS.txt na pasta OUTPUT."""
+    from datetime import datetime
+    ts = datetime.now().strftime("%Y-%m-%d_%H%M%S")
+    out = output_dir / f"missing_data_{ts}.txt"
+    with open(out, 'w', encoding='utf-8') as f:
+        f.write(f"Arthdrone Tools — arquivos nao encontrados\n")
+        f.write(f"Modulo: {modulo}\n")
+        f.write(f"Data: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+        f.write(f"Total: {len(missing)} arquivo(s)\n")
+        f.write("-" * 50 + "\n")
+        for item in missing:
+            f.write(f"{item}\n")
+    return out.name
+
 def organizar_imagens_api(csv_path: str, fotos_dir: str, mode: str, dry_run: bool, log_fn):
     csv_path = Path(csv_path)
     fotos_dir = Path(fotos_dir)
@@ -46,16 +61,23 @@ def organizar_imagens_api(csv_path: str, fotos_dir: str, mode: str, dry_run: boo
     try:
         df = pd.read_csv(csv_path, sep=';', encoding='utf-8-sig')
     except Exception as e:
-        log_fn(f"❌ Erro ao ler CSV: {e}", "error")
+        log_fn(f"Erro ao ler CSV: {e}", "error")
         return
 
-    image_cache = _build_image_cache(fotos_dir, log_fn)
-    log_fn(f"📁 {len(image_cache)} fotos indexadas no cache.", "info")
+    # valida colunas obrigatorias
+    required = {'Blade SN', 'Side', 'Original Image', 'Location', 'Pixel MM'}
+    missing_cols = required - set(df.columns)
+    if missing_cols:
+        log_fn(f"CSV invalido — colunas ausentes: {', '.join(missing_cols)}", "error")
+        return
 
+    image_cache = _build_image_cache(fotos_dir, lambda msg, t: None)  # silencioso
+    total = len(df)
     copied = 0
+    missing = []
+
     for idx, row in df.iterrows():
         blade    = str(row.get('Blade SN', '')).strip()
-        # sanitiza caracteres invalidos para nomes de pasta no Windows (* ? : etc)
         blade    = re.sub(r'[\/*?:"<>|]', '', blade).strip()
         region   = str(row.get('Side', '')).strip().upper()
         location = row.get('Location', 0)
@@ -66,17 +88,17 @@ def organizar_imagens_api(csv_path: str, fotos_dir: str, mode: str, dry_run: boo
         src  = image_cache.get(norm)
 
         if not src:
-            log_fn(f"❌ Não encontrado (linha {idx+1}): {original}", "error")
+            missing.append(f"Linha {idx+2}: {original}")
             continue
 
         dest_dir = output_dir / blade / region
         dest_dir.mkdir(parents=True, exist_ok=True)
 
         if mode == "P":
-            order        = idx + 1
-            z_fmt        = format_location_for_name(location)
-            mm_fmt       = format_mm_px(pixel_mm)
-            clean_name   = f"{blade}_{z_fmt}_{order}_{mm_fmt}.jpg"
+            order      = idx + 1
+            z_fmt      = format_location_for_name(location)
+            mm_fmt     = format_mm_px(pixel_mm)
+            clean_name = f"{blade}_{z_fmt}_{order}_{mm_fmt}.jpg"
         else:
             clean_name = Path(original).name
 
@@ -84,12 +106,18 @@ def organizar_imagens_api(csv_path: str, fotos_dir: str, mode: str, dry_run: boo
         if not dry_run:
             shutil.copy2(src, dest_path)
         copied += 1
-        log_fn(f"{'[DRY] ' if dry_run else ''}✔ {original} → {clean_name}", "success")
 
+    # ── resumo final ──
     if dry_run:
-        log_fn(f"[DRY-RUN] {copied} imagens seriam copiadas.", "warning")
+        log_fn(f"[DRY-RUN] {copied}/{total} imagens seriam copiadas · {len(missing)} nao encontradas", "warning")
+    elif len(missing) == 0:
+        log_fn(f"{copied}/{total} imagens organizadas com sucesso", "success")
+        log_fn(f"Output: {output_dir}", "info")
     else:
-        log_fn(f"✔ {copied} imagens organizadas em OUTPUT/", "success")
+        log_fn(f"{copied}/{total} imagens organizadas · {len(missing)} nao encontradas", "warning")
+        log_fn(f"Output: {output_dir}", "info")
+        fname = _write_missing_file(output_dir, missing, "Organizar Imagens S&R")
+        log_fn(f"Lista de ausentes salva em OUTPUT/{fname}", "warning")
 
 
 # ─── Módulo 2 — Converter CSV ─────────────────────────────────────────────────
@@ -286,7 +314,8 @@ def process_json_api(json_path: str, log_fn):
 
     for key, rows in grouped.items():
         df      = pd.DataFrame(rows)
-        out_csv = root_folder / f"photo_data_{key}.csv"
+        safe_key = re.sub(r'[\/*?:"<>|]', '', key).strip()
+        out_csv = root_folder / f"photo_data_{safe_key}.csv"
         df.to_csv(out_csv, index=False, sep=',')
         log_fn(f"✔ Gerado: {out_csv.name}", "success")
 
@@ -300,12 +329,13 @@ def organizar_fotos_api(json_path: str, source_folder: str, log_fn):
     json_path     = Path(json_path)
     source_folder = Path(source_folder)
     root_folder   = json_path.parent
+    output_dir    = root_folder  # missing_data vai na mesma pasta do JSON (raiz do OUTPUT)
 
     try:
         with open(json_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
     except Exception as e:
-        log_fn(f"❌ Erro ao ler JSON: {e}", "error")
+        log_fn(f"Erro ao ler JSON: {e}", "error")
         return
 
     image_cache = {}
@@ -313,8 +343,12 @@ def organizar_fotos_api(json_path: str, source_folder: str, log_fn):
         if img.is_file() and img.suffix.upper() in SUPPORTED_EXTS:
             image_cache[img.name.lower()] = img
 
+    windblades = data.get('windblades', [])
+    total  = len([w for w in windblades if w.get('image_metadata', {}).get('original_file_name')])
     copied = 0
-    for item in data.get('windblades', []):
+    missing = []
+
+    for item in windblades:
         meta          = item.get('image_metadata', {})
         original_name = meta.get('original_file_name')
         target_path   = meta.get('image_file_path')
@@ -324,14 +358,21 @@ def organizar_fotos_api(json_path: str, source_folder: str, log_fn):
 
         src = image_cache.get(original_name.lower())
         if not src:
-            log_fn(f"❌ Não encontrado: {original_name}", "error")
+            missing.append(original_name)
             continue
 
         relative  = Path(target_path).parts[-3:]
         dest_full = root_folder / Path(*relative) / original_name
         dest_full.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(src, dest_full)
-        log_fn(f"✔ Copiado: {original_name}", "success")
         copied += 1
 
-    log_fn(f"✔ {copied} fotos organizadas.", "success")
+    # ── resumo final ──
+    if len(missing) == 0:
+        log_fn(f"{copied}/{total} fotos organizadas com sucesso", "success")
+        log_fn(f"Output: {root_folder}", "info")
+    else:
+        log_fn(f"{copied}/{total} fotos organizadas · {len(missing)} nao encontradas", "warning")
+        log_fn(f"Output: {root_folder}", "info")
+        fname = _write_missing_file(output_dir, missing, "Organizar Fotos via JSON")
+        log_fn(f"Lista de ausentes salva em {fname}", "warning")
