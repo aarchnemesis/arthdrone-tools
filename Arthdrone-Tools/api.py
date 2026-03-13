@@ -26,6 +26,14 @@ class ArthdroneAPI:
         )
 
     def _log(self, msg: str, type_: str = "info"):
+        # Detecta mensagens de progresso no formato PROGRESS:current/total
+        import re
+        progress_match = re.match(r'^PROGRESS:(\d+)/(\d+)$', msg)
+        if progress_match:
+            current = int(progress_match.group(1))
+            total = int(progress_match.group(2))
+            self._emit("arthprogress", {"current": current, "total": total})
+            return  # nao loga mensagens de progresso puras
         self._emit("arthlog", {"text": msg, "type": type_})
 
     # ─── Seleção de arquivos/pastas ──────────────────────────────────────────
@@ -56,13 +64,19 @@ class ArthdroneAPI:
         return result[0] if result else ""
 
     def open_folder(self, path: str):
-        """Abre a pasta no Explorer do Windows."""
-        import subprocess, os
+        """Abre a pasta no gerenciador de arquivos nativo (Windows/Linux/macOS)."""
+        import subprocess, os, sys
         try:
-            if os.path.isdir(path):
-                subprocess.Popen(f'explorer "{path}"')
-            elif os.path.isfile(path):
-                subprocess.Popen(f'explorer /select,"{path}"')
+            if sys.platform == "win32":
+                if os.path.isdir(path):
+                    subprocess.Popen(f'explorer "{path}"')
+                elif os.path.isfile(path):
+                    subprocess.Popen(f'explorer /select,"{path}"')
+            elif sys.platform == "darwin":
+                subprocess.Popen(["open", path])
+            else:
+                # Linux — xdg-open funciona com qualquer file manager
+                subprocess.Popen(["xdg-open", path])
         except Exception:
             pass
 

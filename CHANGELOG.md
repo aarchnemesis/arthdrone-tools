@@ -5,7 +5,59 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
-## [2.1] — 2026-03-08
+## [3.0.0] — 2026-03-12
+
+### 🏗️ Arquitetura
+- **Frontend componentizado**: `App.jsx` (707 linhas) desmembrado em 10 arquivos — `TopBar`, `Sidebar`, `ModuleForm`, `GpsSelector`, `LogPanel`, `StatusBar`, constantes de tradução/ícones e hook `usePyWebView`
+- **CSS design system**: todo CSS inline e `<style>` dinâmico migrado para `App.css` com CSS custom properties (`var(--accent)`, etc.) e tema via `[data-theme="dark"]`
+- **Backend unificado**: módulos CLI (`organize_images.py`, `convert_csv.py`, `extract_gps_z.py`, `process_json.py`, `organize_json_photos.py`) refatorados como wrappers finos sobre `api_functions.py`, eliminando duplicação de lógica
+- **Versão centralizada**: criado `version.py` como fonte única — importado pelo `main_gui.py` e exibido na UI
+
+### 🐛 Bug Fixes
+- Corrigido bug em `organize_images.py`: função `normalize_filename_api_api` tinha nome errado e causava `NameError`
+- Corrigido `except:` genérico (bare except) em `utils.py` — agora captura `(ValueError, TypeError)` especificamente
+- Substituída API privada `img._getexif()` do Pillow por API pública `img.getexif()` + `get_ifd(IFD.GPSInfo)`
+- Removidos imports duplicados internos em `convert_csv.py`
+
+### ✨ Melhorias de UX
+- **Validação de inputs**: botão "Executar" desabilitado até todos os campos obrigatórios serem preenchidos
+- **Progresso explícito**: backend emite eventos `arthprogress` com `current/total` em vez do frontend tentar parsear regex nos logs
+- **Persistência de tema**: `localStorage` em vez de `sessionStorage` — tema e últimos caminhos sobrevivem ao fechar o app
+- **Auto-scroll no log**: painel de log rola automaticamente para o final quando novos eventos chegam
+- **Limite de logs**: máximo de 500 entradas para evitar consumo excessivo de memória
+- **Status bar localizada**: "Pronto" / "Ready" de acordo com o idioma selecionado
+- **Sem flash branco**: `background_color` do pywebview alterado para `#1a1d23` (dark mode default)
+- **IDs estáveis**: campos de formulário usam `inputId`/`optionId` fixos em vez de labels traduzidos
+
+### 🧪 Testes
+- Criados 24 testes unitários com pytest:
+  - `test_utils.py`: `format_mm_px`, `format_location_for_name`, `extract_dji_timestamp`, `_normalize_filename`, `normalize_column_names`
+  - `test_api_functions.py`: `converter_csv_api` (básico, arquivo inválido, geração .xlsx), validação de colunas em `organizar_imagens_api`
+
+---
+
+## [2.2.0] — 2026-03-12
+
+### Adicionado
+- Filtro de tipo de arquivo nos diálogos de seleção — campos CSV aceitam apenas `.csv`, campos JSON aceitam apenas `.json`
+- Botão "Abrir pasta" aparece ao lado de "Concluído!" abrindo o OUTPUT diretamente no Explorer
+- Persistência do tema claro/escuro entre sessões
+- Persistência dos últimos caminhos usados por módulo entre sessões
+- Atalho `Ctrl+Enter` para executar o módulo atual
+- Geração de `missing_data_YYYY-MM-DD_HHMMSS.txt` na pasta OUTPUT quando há arquivos não encontrados nos módulos 1 e 5
+- Validação das colunas obrigatórias do CSV antes de executar o módulo 1
+
+### Alterado
+- Log dos módulos 1 e 5 agora é silencioso durante execução — exibe apenas resumo final: `X/Y imagens organizadas · Z não encontradas` e caminho do OUTPUT
+- Documentação do módulo 4 atualizada com requisito de estrutura de pastas (JSON deve estar na mesma pasta que A, B e C)
+
+### Corrigido
+- Caracteres inválidos no Windows (`*`, `?`, `:` etc.) no blade SN agora são sanitizados também no nome do CSV gerado pelo módulo 4 — correção do mesmo bug que já havia sido tratado no módulo 1
+- `useEffect` do atalho `Ctrl+Enter` movido para após a declaração de `handleRun`, corrigindo `ReferenceError: Cannot access before initialization` que causava tela branca após build
+
+---
+
+## [2.1.0] — 2026-03-08
 
 ### Adicionado
 - **Interface gráfica nativa** via PyWebView + React — substitui a janela de terminal preta
@@ -44,7 +96,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
-## [1.0] — 2026-03-06
+## [1.0.0] — 2026-03-06
 
 ### Adicionado
 - Interface CLI em terminal com menu numerado
@@ -60,5 +112,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
-[2.1]: https://github.com/aarchnemesis/arthdrone-tools/releases/tag/v2.1
-[1.0]: https://github.com/aarchnemesis/arthdrone-tools/releases/tag/tools
+[3.0.0]: https://github.com/aarchnemesis/arthdrone-tools/releases/tag/v3.0
+[2.2.0]: https://github.com/aarchnemesis/arthdrone-tools/releases/tag/v2.2
+[2.1.0]: https://github.com/aarchnemesis/arthdrone-tools/releases/tag/v2.1
+[1.0.0]: https://github.com/aarchnemesis/arthdrone-tools/releases/tag/tools

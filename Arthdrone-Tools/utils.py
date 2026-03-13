@@ -4,7 +4,7 @@ from pathlib import Path
 import re
 import pandas as pd
 from PIL import Image
-from PIL.ExifTags import TAGS, GPSTAGS
+from PIL.ExifTags import TAGS, GPSTAGS, IFD
 from datetime import datetime
 
 SUPPORTED_EXTS = {".JPG", ".JPEG"}
@@ -26,13 +26,13 @@ def find_image(image_path: str, image_cache: dict) -> Path | None:
 def format_mm_px(value: float) -> str:
     try:
         return f"{value:.5f}".replace(".", "_")
-    except:
+    except (ValueError, TypeError):
         return "UNKNOWN"
 
 def format_location_for_name(value) -> int:
     try:
         return int(float(value))
-    except:
+    except (ValueError, TypeError):
         return -1
 
 def normalize_column_names(df: pd.DataFrame) -> dict:
@@ -60,7 +60,7 @@ def extract_dji_timestamp(filename: str):
         parts = filename.split('_')
         if len(parts) >= 2 and len(parts[1]) == 14:
             return datetime.strptime(parts[1], "%Y%m%d%H%M%S")
-    except:
+    except (ValueError, IndexError):
         pass
     return datetime.min
 
@@ -82,13 +82,17 @@ def get_exif_field(exif_data, field_name):
 def extract_gps_altitude(image_path: Path):
     try:
         with Image.open(image_path) as img:
-            # _getexif() é necessário para acessar o bloco GPS (tag 34853)
-            # dos arquivos DJI — img.getexif() não expõe esse bloco corretamente
-            exif_data = img._getexif()
-            if not exif_data:
+            exif = img.getexif()
+            if not exif:
                 return None
 
-            altitude = get_exif_field(exif_data, 'GPSAltitude')
+            # Usa a API pública get_ifd() para acessar o bloco GPS
+            gps_ifd = exif.get_ifd(IFD.GPSInfo)
+            if not gps_ifd:
+                return None
+
+            # GPSAltitude é tag 6 no IFD GPS
+            altitude = gps_ifd.get(6)  # GPSAltitude
             if altitude is None:
                 return None
 
@@ -101,7 +105,8 @@ def extract_gps_altitude(image_path: Path):
             else:
                 altitude = float(altitude)
 
-            ref = get_exif_field(exif_data, 'GPSAltitudeRef')
+            # GPSAltitudeRef é tag 5: 0 = acima do nível do mar, 1 = abaixo
+            ref = gps_ifd.get(5)  # GPSAltitudeRef
             if ref == 1:
                 altitude = -altitude
 

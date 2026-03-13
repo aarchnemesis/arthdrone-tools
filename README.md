@@ -1,4 +1,4 @@
-# Arthdrone Tools v2.1
+# Arthdrone Tools v3.0
 
 Ferramenta interna em Python para automação de **S&R** (Sort & Remove) em inspeções de pás eólicas com drones DJI. Otimiza o fluxo entre ArthDrone e Arthnex: organiza fotos, corrige Z zerado, processa JSON, converte CSVs, organiza pastas.
 
@@ -10,17 +10,17 @@ Desenvolvida para uso interno, com foco em precisão e velocidade. Modular, bil�
 
 ## Status
 
-- **Versão:** 2.1
+- **Versão:** 3.0
 - **Interface:** GUI nativa (PyWebView + React) — sem janela de terminal
 - **Uso principal:** Windows 10/11 64-bit
 - **Acesso:** Repositório privado (somente colaboradores convidados)
-- **Binário Windows:** Disponível na Release v2.1 (pasta compactada, sem instalação)
+- **Binário Windows:** Disponível na Release v3.0 (pasta compactada, sem instalação)
 
 ---
 
 ## Como usar (usuário final)
 
-1. Baixe o zip da Release v2.1
+1. Baixe o zip da Release v3.0
 2. Descompacte a pasta `ArthdroneTools/` em qualquer lugar (Desktop, pendrive, etc.)
 3. Clique duas vezes em `ArthdroneTools.exe`
 4. A interface abre diretamente — sem janela de terminal
@@ -73,28 +73,36 @@ Manual completo integrado à interface, disponível em PT-BR e EN.
 
 ```
 Arthdrone-Tools/
-├── main_gui.py           # Launcher PyWebView
-├── api.py                # Bridge Python ↔ JavaScript
-├── api_functions.py      # Lógica de cada módulo (versão GUI)
-├── utils.py              # Funções utilitárias compartilhadas
-├── translations.py       # Sistema i18n PT-BR / EN (CLI legado)
-├── colors.py             # Paleta de cores CLI (legado)
-├── organize_images.py    # Módulo 1 (CLI legado)
-├── convert_csv.py        # Módulo 2 (CLI legado)
-├── extract_gps_z.py      # Módulo 3 (CLI legado)
-├── process_json.py       # Módulo 4 (CLI legado)
-├── organize_json_photos.py # Módulo 5 (CLI legado)
-├── documentation.py      # Módulo 6 (CLI legado)
-├── main.py               # Launcher CLI (legado)
-├── icone.ico             # Ícone da aplicação
-├── arthdrone.spec        # Configuração PyInstaller
+├── main_gui.py              # Launcher PyWebView
+├── api.py                   # Bridge Python ↔ JavaScript
+├── api_functions.py         # Lógica centralizada de todos os módulos
+├── utils.py                 # Funções utilitárias compartilhadas
+├── version.py               # Fonte única de versão (v3.0.0)
+├── translations.py          # Sistema i18n PT-BR / EN (CLI)
+├── colors.py                # Paleta de cores CLI
+├── organize_images.py       # Módulo 1 — wrapper CLI sobre api_functions
+├── convert_csv.py           # Módulo 2 — wrapper CLI sobre api_functions
+├── extract_gps_z.py         # Módulo 3 — wrapper CLI sobre api_functions
+├── process_json.py          # Módulo 4 — wrapper CLI sobre api_functions
+├── organize_json_photos.py  # Módulo 5 — wrapper CLI sobre api_functions
+├── documentation.py         # Módulo 6 (CLI)
+├── main.py                  # Launcher CLI
+├── icone.ico                # Ícone da aplicação
+├── arthdrone.spec           # Configuração PyInstaller
+├── tests/
+│   ├── test_utils.py        # Testes unitários — utils.py
+│   └── test_api_functions.py # Testes unitários — api_functions.py
 └── frontend/
     ├── src/
-    │   ├── App.jsx       # Interface React
-    │   ├── icon.js       # Ícone em base64
-    │   └── main.jsx      # Entry point React
-    ├── vite.config.js    # Configuração Vite (base: './')
-    └── dist/             # Build de produção (gerado pelo npm run build)
+    │   ├── App.jsx           # Componente raiz React (~160 linhas)
+    │   ├── App.css           # Design system com CSS custom properties
+    │   ├── icon.js           # Ícone em base64
+    │   ├── main.jsx          # Entry point React
+    │   ├── components/       # TopBar, Sidebar, ModuleForm, LogPanel, etc.
+    │   ├── constants/        # translations.js, icons.jsx
+    │   └── hooks/            # usePyWebView.js
+    ├── vite.config.js        # Configuração Vite (base: './')
+    └── dist/                 # Build de produção (gerado pelo npm run build)
 ```
 
 ---

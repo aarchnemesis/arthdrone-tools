@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Arthdrone Tools
+Comment=Automação S&R de pás eólicas — organizar fotos, processar JSON, extrair GPS
+Exec=ArthdroneTools
+Icon=arthdrone-tools
+Categories=Utility;Development;
+Terminal=false
+StartupWMClass=arthdrone-tools

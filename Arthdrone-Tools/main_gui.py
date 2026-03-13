@@ -4,6 +4,7 @@ import sys
 import os
 import webview
 from api import ArthdroneAPI
+from version import VERSION
 
 
 def get_frontend_path():
@@ -22,14 +23,14 @@ def main():
     url = frontend_path if frontend_path else "about:blank"
 
     window = webview.create_window(
-        title="Arthdrone Tools v2.1",
+        title=f"Arthdrone Tools v{VERSION}",
         url=url,
         js_api=api,
         width=1000,
         height=680,
         min_size=(800, 560),
         resizable=True,
-        background_color="#ffffff",
+        background_color="#1a1d23",  # dark mode default, evita flash branco
         easy_drag=False,        # evita conflito com drag de arquivos
     )
 

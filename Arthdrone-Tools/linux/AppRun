@@ -1,0 +1,15 @@
+#!/bin/bash
+# AppRun — Script de entrada do AppImage
+# O AppImage seta APPDIR automaticamente antes de executar este script
+
+HERE="$(dirname "$(readlink -f "${0}")")"
+
+# Garante que o WebKitGTK do host está acessível
+export GI_TYPELIB_PATH="${HERE}/usr/lib/girepository-1.0:${GI_TYPELIB_PATH}"
+export LD_LIBRARY_PATH="${HERE}/usr/lib:${LD_LIBRARY_PATH}"
+
+# Variáveis de ambiente para o pywebview funcionar corretamente
+export WEBKIT_DISABLE_COMPOSITING_MODE=1
+
+# Executa o binário do PyInstaller
+exec "${HERE}/usr/bin/ArthdroneTools" "$@"

@@ -1,20 +1,35 @@
-# extract_gps_z.py - Função 3: Extrair GPS + Z relativo (versão robusta)
+# extract_gps_z.py - Função 3: Extrair GPS + Z relativo
+# Wrapper CLI sobre api_functions
 
-from pathlib import Path
-import pandas as pd
 from colorama import Fore, Style
-
-from utils import get_path_from_input, extract_gps_altitude, SUPPORTED_EXTS  # ← linha corrigida
+from utils import get_path_from_input, SUPPORTED_EXTS, extract_gps_altitude
 from translations import t
+from api_functions import extrair_gps_z_api
 
-def extrair_gps_z_api(lang="pt"):
+
+def _cli_log(msg, type_="info"):
+    """Callback de log para modo CLI."""
+    color = {
+        "success": Fore.GREEN,
+        "warning": Fore.YELLOW,
+        "error": Fore.RED,
+        "info": Fore.WHITE,
+    }.get(type_, Fore.WHITE)
+    print(color + msg + Style.RESET_ALL)
+
+
+def extrair_gps_z(lang="pt"):
     print(Fore.CYAN + f"\n=== {t('option_3', lang)} ===\n" + Style.RESET_ALL)
 
     pasta = get_path_from_input(t("drag_photos", lang))
-    if not pasta or not pasta.is_dir(): return
+    if not pasta or not pasta.is_dir():
+        return
 
-    fotos = sorted([p for p in pasta.rglob("*") if p.is_file() and p.suffix.upper() in SUPPORTED_EXTS],
-                   key=lambda p: p.name)
+    # Etapa 1: mostrar fotos com GPS para o usuario escolher a raiz
+    fotos = sorted(
+        [p for p in pasta.rglob("*") if p.is_file() and p.suffix.upper() in SUPPORTED_EXTS],
+        key=lambda p: p.name,
+    )
 
     if not fotos:
         print("Nenhuma foto encontrada.")
@@ -35,7 +50,7 @@ def extrair_gps_z_api(lang="pt"):
     print(f"Fotos sem GPS: {len(sem_gps)}")
 
     if len(altitudes) == 0:
-        print("Nenhuma foto com GPS válido.")
+        print("Nenhuma foto com GPS valido.")
         return
 
     sorted_names = sorted(altitudes.keys())
@@ -43,36 +58,27 @@ def extrair_gps_z_api(lang="pt"):
     for i, nome in enumerate(sorted_names, 1):
         print(f"{i:3d} - {nome} ({altitudes[nome]:.3f} m)")
 
-    raiz_input = input("\nDigite o número da foto da raiz (ex: 1) ou o nome completo (Z=0): ").strip()
+    raiz_input = input("\nDigite o numero da foto da raiz (ex: 1) ou o nome completo (Z=0): ").strip()
 
     if raiz_input.isdigit():
         try:
             idx = int(raiz_input) - 1
             raiz_name = sorted_names[idx]
         except IndexError:
-            print("Número inválido. Usando a primeira foto com GPS como fallback.")
+            print("Numero invalido. Usando a primeira foto com GPS como fallback.")
             raiz_name = sorted_names[0]
     else:
         raiz_name = raiz_input
 
     if raiz_name not in altitudes:
-        print(f"⚠ Foto '{raiz_name}' não tem GPS ou não encontrada. Usando primeira com GPS.")
+        print(f"Foto '{raiz_name}' nao tem GPS ou nao encontrada. Usando primeira com GPS.")
         raiz_name = sorted_names[0]
 
-    altitude_raiz = altitudes[raiz_name]
-    print(f"Raiz selecionada: {raiz_name} ({altitude_raiz:.3f} m) → Z=0")
-
-    resultados = []
-    for nome, alt in altitudes.items():
-        z_rel = (alt - altitude_raiz) * 1000
-        resultados.append({
-            'nome': nome,
-            'altitude_gps_m': round(alt, 3),
-            'z_relativo_mm': round(z_rel)
-        })
-
-    df = pd.DataFrame(resultados)
-    df.to_csv(pasta / "gps_z_relativo.csv", index=False)
-    print(Fore.GREEN + f"\n✔ gps_z_relativo.csv gerado ({len(df)} linhas)" + Style.RESET_ALL)
+    # Etapa 2: gerar CSV usando api_functions
+    extrair_gps_z_api(
+        pasta=str(pasta),
+        raiz_nome=raiz_name,
+        log_fn=_cli_log,
+    )
 
     input(t("enter_to_return", lang))

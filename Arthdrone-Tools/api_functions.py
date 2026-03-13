@@ -77,6 +77,10 @@ def organizar_imagens_api(csv_path: str, fotos_dir: str, mode: str, dry_run: boo
     missing = []
 
     for idx, row in df.iterrows():
+        # Emitir progresso a cada 10 imagens ou na ultima
+        if idx % 10 == 0 or idx == total - 1:
+            log_fn(f"PROGRESS:{idx + 1}/{total}")
+
         blade    = str(row.get('Blade SN', '')).strip()
         blade    = re.sub(r'[\/*?:"<>|]', '', blade).strip()
         region   = str(row.get('Side', '')).strip().upper()
@@ -348,7 +352,11 @@ def organizar_fotos_api(json_path: str, source_folder: str, log_fn):
     copied = 0
     missing = []
 
-    for item in windblades:
+    for i, item in enumerate(windblades):
+        # Emitir progresso a cada 10 fotos ou na ultima
+        if i % 10 == 0 or i == total - 1:
+            log_fn(f"PROGRESS:{i + 1}/{total}")
+
         meta          = item.get('image_metadata', {})
         original_name = meta.get('original_file_name')
         target_path   = meta.get('image_file_path')

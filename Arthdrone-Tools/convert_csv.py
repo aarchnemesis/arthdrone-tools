@@ -1,35 +1,37 @@
+# convert_csv.py - Função 2: Converter CSV
+# Wrapper CLI sobre api_functions.converter_csv_api
 
-import pandas as pd
-import csv  # ← adicionado aqui
-from pathlib import Path
 from colorama import Fore, Style
-
 from utils import get_path_from_input
 from translations import t
+from api_functions import converter_csv_api
 
-def converter_csv_api(csv_path: str, gerar_xlsx: bool, log_fn):
-    """Versão para GUI — usa log_fn() no lugar de print()."""
-    from pathlib import Path
-    import pandas as pd
-    import csv
 
-    try:
-        df = pd.read_csv(csv_path, sep=';', encoding='utf-8-sig')
-    except Exception as e:
-        log_fn(f"❌ Erro ao ler CSV: {e}", "error")
+def _cli_log(msg, type_="info"):
+    """Callback de log para modo CLI."""
+    color = {
+        "success": Fore.GREEN,
+        "warning": Fore.YELLOW,
+        "error": Fore.RED,
+        "info": Fore.WHITE,
+    }.get(type_, Fore.WHITE)
+    print(color + msg + Style.RESET_ALL)
+
+
+def converter_csv(lang="pt"):
+    print(Fore.CYAN + f"\n=== {t('option_2', lang)} ===\n" + Style.RESET_ALL)
+
+    csv_path = get_path_from_input(t("drag_csv", lang))
+    if not csv_path:
         return
 
-    saida_csv = Path(csv_path).with_name(
-        Path(csv_path).stem + "_convertido.csv"
+    xlsx_raw = input("Gerar .xlsx? [S/N] (default N): ").strip().upper()
+    gerar_xlsx = xlsx_raw in ("S", "Y")
+
+    converter_csv_api(
+        csv_path=str(csv_path),
+        gerar_xlsx=gerar_xlsx,
+        log_fn=_cli_log,
     )
-    df.to_csv(saida_csv, index=False, sep=',',
-              encoding='utf-8-sig', quoting=csv.QUOTE_ALL)
-    log_fn(f"✔ CSV convertido: {saida_csv}", "success")
 
-    if gerar_xlsx:
-        saida_xlsx = Path(csv_path).with_name(
-            Path(csv_path).stem + "_convertido.xlsx"
-        )
-        df.to_excel(saida_xlsx, index=False)
-        log_fn(f"✔ .xlsx gerado: {saida_xlsx}", "success")
-
+    input(t("enter_to_return", lang))
