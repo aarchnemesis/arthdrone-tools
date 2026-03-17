@@ -142,3 +142,11 @@ Ver [CHANGELOG.md](./CHANGELOG.md)
 
 Desenvolvido por Pedro Oliveira ([@aarchnemesis](https://github.com/aarchnemesis))  
 Última atualização: Março 2026
+
+
+### ⚠️ Windows — Erro ao abrir em ambientes corporativos
+
+Se ao executar aparecer erro de runtime (.dll), o Windows pode ter bloqueado
+os arquivos por segurança. Abra o PowerShell na pasta do programa e rode:
+
+Get-ChildItem -Recurse | Unblock-File
