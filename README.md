@@ -1,8 +1,8 @@
-# Arthdrone Tools v3.0
+# Arthdrone Tools v4.0.0
 
-Ferramenta interna em Python para automação de **S&R** (Sort & Remove) em inspeções de pás eólicas com drones DJI. Otimiza o fluxo entre ArthDrone e Arthnex: organiza fotos, corrige Z zerado, processa JSON, converte CSVs, organiza pastas.
+Ferramenta interna em Python e React para automação de **S&R** (Sort & Remove) em inspeções de aerogeradores com drones DJI. Otimiza o fluxo entre ArthDrone e plataformas de laudo: organiza fotos, corrige Z zerado, recupera fotos perdidas, separa pás misturadas, converte CSVs e organiza pastas.
 
-**Reduz o tempo de processamento de 18 para 9 minutos por aerogerador, dobrando a produtividade diária.**
+**A nova versão Automação S&R de Externas não apenas acelera o processo, mas corrige ativamente falhas humanas e pulos de frame de voo com extrema precisão.**
 
 Desenvolvida para uso interno, com foco em precisão e velocidade. Modular, bilíngue (PT-BR/EN), com interface gráfica nativa via PyWebView + React.
 
@@ -10,52 +10,41 @@ Desenvolvida para uso interno, com foco em precisão e velocidade. Modular, bil�
 
 ## Status
 
-- **Versão:** 3.0
-- **Interface:** GUI nativa (PyWebView + React) — sem janela de terminal
+- **Versão:** 4.0.0
+- **Interface:** GUI nativa (PyWebView + React)
 - **Uso principal:** Windows 10/11 64-bit
-- **Acesso:** Repositório privado (somente colaboradores convidados)
-- **Binário Windows:** Disponível na Release v3.0 (pasta compactada, sem instalação)
+- **Binário Windows:** Disponível na Release v4.0.0 (pasta compactada)
 
 ---
 
 ## Como usar (usuário final)
 
-1. Baixe o zip da Release v3.0
-2. Descompacte a pasta `ArthdroneTools/` em qualquer lugar (Desktop, pendrive, etc.)
+1. Baixe o zip da Release v4.0.0
+2. Descompacte a pasta `ArthdroneTools/`
 3. Clique duas vezes em `ArthdroneTools.exe`
-4. A interface abre diretamente — sem janela de terminal
-5. Selecione o módulo desejado na barra lateral
-6. Clique nos campos para selecionar arquivos e pastas via dialogo nativo do Windows
-7. Configure as opções e clique no botão de execução
-
-> **Requisitos:** Windows 10/11 64-bit com WebView2 Runtime (já instalado por padrão no Windows 11 e na maioria dos Windows 10 atualizados). Se necessário, o próprio Windows oferece instalar automaticamente.
+4. A interface abre diretamente
+5. Selecione o módulo desejado na barra lateral agrupada em abas
+6. Clique nos campos para selecionar arquivos
+7. Configure opções pertinentes e clique para executar
 
 ---
 
-## Módulos
+## Módulos Principais
 
-### 1 — Organizar Imagens S&R
-Lê o CSV exportado da plataforma Arthnex. Para cada linha, localiza a foto correspondente na pasta selecionada (busca em subpastas, case-insensitive).
+### Fluxo S&R e Ferramentas
+- **1 — Organizar Imagens S&R:** Lê o CSV da plataforma e joga as fotos nas subpastas certas de A/B/C.
+- **2 — Processar JSON:** Lê o `photo_data.json` do ArtDrone antes do upload.
+- **3 — Organizar Fotos:** Copia pro HD externo ou base organizando as originais.
+- **4 — Converter CSV:** Quebra galho para salvar em formato com vírgulas/xlsx.
+- **5 — GPS + Z Relativo:** Tira o metadado puro do GPS da DJI e converte em altitude para o laudo.
 
-- **Modo Platform (P):** renomeia a foto para o formato da plataforma com metadados embutidos — `Blade_Z_Order_mm_px.jpg`
-- **Modo Recovery (R):** mantém o nome DJI original
-- **Dry-run:** simula o processo sem copiar nenhum arquivo — útil para verificar quantas fotos serão encontradas antes de executar
-- Caracteres inválidos no nome da pá (ex: `*`) são removidos automaticamente para compatibilidade com o Windows
+### Correções (Onde a Mágica Acontece)
+- **6 — Corrigir JSON (Blade Split):** Lê o gap temporal longo (>60s) e quebra um relatório que acoplou duas pás fisicamente no mesmo arquivo contínuo, salvando 2 CSVs cirúrgicos prontos pra DB.
+- **7 — Corrigir Z=0:** Repara colunas "Location" da plataforma que vieram corrompidas (zeradas). Usurpando a altimetria relativa do drone, recalcula a distância real sem afetar as fotos boas do CSV.
+- **8 — Recuperar Perdas:** Escaneia o SD Card atrás de pulos numéricos da câmera, resgata as imagens e re-injetam Location baseados nas âncoras adjacentes usando GPS Real.
 
-### 2 — Converter CSV
-Converte o separador do CSV de ponto-e-vírgula para vírgula, tornando o arquivo compatível com Excel e outras ferramentas. Gera opcionalmente um arquivo `.xlsx` na mesma pasta do CSV original.
-
-### 3 — GPS + Z Relativo
-Extrai a altitude GPS do EXIF de cada foto na pasta. Após carregar a lista, o usuário seleciona manualmente a foto da raiz da pá (Z=0) — necessário porque o voo pode ser feito em qualquer sentido (root-to-tip ou tip-to-root). Gera `gps_z_relativo.csv` com a progressão em mm a pir da raiz escolhida.
-
-### 4 — Processar JSON
-Lê o `photo_data.json` gerado pelo ArthDrone e gera os CSVs para o Image Uploader. Ordena as fotos por timestamp DJI e aplica inversão TipToRoot para as regiões SS e PS. Gera um CSV por pá e o arquivo `photo_data_matched.csv` com a ligação completa entre metadados e caminhos reais das fotos.
-
-### 5 — Organizar Fotos
-Usa o JSON como mapa para criar as pastas A/B/C e copiar as fotos brutas do SD card para os caminhos corretos antes de rodar o Módulo 4.
-
-### 6 — Documentação
-Manual completo integrado à interface, disponível em PT-BR e EN.
+### Suporte
+- **9 — Documentação:** Manual integrado step-by-step atualizado.
 
 ---
 

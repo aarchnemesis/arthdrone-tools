@@ -60,6 +60,9 @@ def organizar_imagens_api(csv_path: str, fotos_dir: str, mode: str, dry_run: boo
 
     try:
         df = pd.read_csv(csv_path, sep=';', encoding='utf-8-sig')
+        if len(df.columns) == 1 and ',' in df.columns[0]:
+            df = pd.read_csv(csv_path, sep=',', encoding='utf-8-sig')
+            log_fn("Delimitador ',' detectado no CSV (ex: LibreOffice). Ajustando leitura automaticamente...", "info")
     except Exception as e:
         log_fn(f"Erro ao ler CSV: {e}", "error")
         return
@@ -131,6 +134,9 @@ def converter_csv_api(csv_path: str, gerar_xlsx: bool, log_fn):
 
     try:
         df = pd.read_csv(csv_path, sep=';', encoding='utf-8-sig')
+        if len(df.columns) == 1 and ',' in df.columns[0]:
+            df = pd.read_csv(csv_path, sep=',', encoding='utf-8-sig')
+            log_fn("Delimitador ',' detectado no CSV. Lendo corretamente e convertendo...", "info")
     except Exception as e:
         log_fn(f"❌ Erro ao ler CSV: {e}", "error")
         return
@@ -213,6 +219,231 @@ def extrair_gps_z_api(pasta: str, raiz_nome: str, log_fn):
     df.to_csv(out, index=False)
     log_fn(f"gps_z_relativo.csv gerado ({len(df)} linhas)", "success")
 
+
+def corrigir_z_zero_csv_api(csv_path: str, fotos_dir: str, raiz_nome: str, log_fn):
+    """
+    Substitui os valores Z=0 (Location) no CSV pelos valores calculados (z relativo)
+    a partir da altitude da foto raiz escolhida.
+    """
+    csv_path = Path(csv_path)
+    fotos_dir = Path(fotos_dir)
+    
+    try:
+        df = pd.read_csv(csv_path, sep=';', encoding='utf-8-sig')
+        if len(df.columns) == 1 and ',' in df.columns[0]:
+            df = pd.read_csv(csv_path, sep=',', encoding='utf-8-sig')
+            log_fn("Delimitador ',' detectado. Corrigindo leitura automaticamente...", "info")
+    except Exception as e:
+        log_fn(f"Erro ao ler CSV: {e}", "error")
+        return
+        
+    if 'Location' not in df.columns or 'Original Image' not in df.columns:
+        log_fn("CSV inválido. Colunas 'Location' e 'Original Image' são necessárias.", "error")
+        return
+        
+    # Construir cache para não ficar procurando arquivo por arquivo demorando horas
+    image_cache = _build_image_cache(fotos_dir, lambda msg, t: None)
+    
+    # Obter altitude raiz
+    root_norm = _normalize_filename(raiz_nome)
+    root_path = image_cache.get(root_norm)
+    
+    if not root_path:
+        log_fn(f"Foto raiz '{raiz_nome}' não encontrada na pasta.", "error")
+        return
+        
+    base_alt = extract_gps_altitude(root_path)
+    if base_alt is None:
+        log_fn(f"Foto raiz '{raiz_nome}' não possui altitude no GPS.", "error")
+        return
+        
+    base_alt = float(base_alt)
+    log_fn(f"Altitude Base (Foto Raiz {raiz_nome}): {base_alt:.3f} m", "info")
+    
+    mudancas = 0
+    total = len(df)
+    
+    for idx, row in df.iterrows():
+        try:
+            loc_val = float(row['Location'])
+        except (ValueError, TypeError):
+            continue
+            
+        if loc_val == 0.0:
+            name = str(row['Original Image']).strip()
+            norm = _normalize_filename(name)
+            photo_path = image_cache.get(norm)
+            
+            if photo_path:
+                alt = extract_gps_altitude(photo_path)
+                if alt is not None:
+                    # Location (Z) avança em milímetros a partir da raiz
+                    new_loc = abs(float(alt) - base_alt) * 1000
+                    df.at[idx, 'Location'] = int(round(new_loc))
+                    mudancas += 1
+                else:
+                    log_fn(f"⚠ Foto sem GPS ignorada: {name}", "warning")
+            else:
+                log_fn(f"⚠ Foto não encontrada ignorada: {name}", "warning")
+                
+    if mudancas > 0:
+        out_file = csv_path.with_name(f"{csv_path.stem}_Z_corrigido.csv")
+        df.to_csv(out_file, index=False, sep=';', encoding='utf-8-sig', quoting=csv.QUOTE_ALL)
+        log_fn(f"✔ Correção de Z aplicada! {mudancas} itens zerados corrigidos.", "success")
+        log_fn(f"Salvo como: {out_file.name}", "success")
+    else:
+        log_fn("Nenhuma alteração foi realizada (Nenhum Location=0 precisou de reparo)", "info")
+
+
+# ─── Módulo 9 — Recuperar Fotos Perdidas ───────────────────────────────────
+def recuperar_fotos_perdidas_api(json_path: str, fotos_dir: str, log_fn):
+    json_path = Path(json_path)
+    fotos_dir = Path(fotos_dir)
+    
+    try:
+        with open(json_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+    except Exception as e:
+        log_fn(f"Erro ao ler JSON: {e}", "error")
+        return
+        
+    windblades = data.get('windblades', [])
+    if not windblades:
+        log_fn("Nenhum windblade encontrado no JSON.", "error")
+        return
+        
+    log_fn("Montando cache de fotos do SD Card (isso pode levar alguns instantes)...", "info")
+    image_cache = _build_image_cache(fotos_dir, log_fn)
+    
+    # Agrupar por blade e region
+    grupos = {}
+    for wb in windblades:
+        key = (wb.get("blade_position"), wb.get("region"))
+        if key not in grupos:
+            grupos[key] = []
+        grupos[key].append(wb)
+        
+    out_dir = json_path.parent / "Fotos_Recuperadas"
+    resultados = []
+    
+    import re
+    from utils import extract_dji_timestamp
+    
+    for (blade_pos, region), photos in grupos.items():
+        if not photos: continue
+        
+        # Sort by sequence num inside filename
+        def get_seq(p):
+            name = p.get("image_metadata", {}).get("original_file_name", "")
+            match = re.search(r'_(\d{4})_V', name)
+            if match: return int(match.group(1))
+            return 0
+            
+        photos.sort(key=get_seq)
+        
+        nums = []
+        photo_map = {}
+        for p in photos:
+            seq = get_seq(p)
+            if seq > 0:
+                nums.append(seq)
+                photo_map[seq] = p
+                
+        if not nums: continue
+        
+        missing = []
+        full_range = range(nums[0], nums[-1] + 1)
+        missing.extend([n for n in full_range if n not in nums])
+        
+        for m in missing:
+            before = photo_map.get(m - 1)
+            after = photo_map.get(m + 1)
+            if not before or not after: continue
+            
+            before_name = before.get("image_metadata", {}).get("original_file_name", "")
+            after_name = after.get("image_metadata", {}).get("original_file_name", "")
+            
+            t_before = extract_dji_timestamp(before_name)
+            t_after = extract_dji_timestamp(after_name)
+            
+            if t_before.year == 1 or t_after.year == 1:
+                continue
+                
+            log_fn(f"Buscando foto perdida {m} (entre {t_before.strftime('%H:%M:%S')} e {t_after.strftime('%H:%M:%S')})", "info")
+            
+            # Buscar no cache a foto com esse numero sequencial e timestamp no meio
+            encontrada_path = None
+            target_str = f"_{m:04d}_"
+            
+            for norm_name, p_path in image_cache.items():
+                if target_str in norm_name:
+                    t_cand = extract_dji_timestamp(p_path.name)
+                    if t_cand.year != 1 and t_before < t_cand < t_after:
+                        encontrada_path = p_path
+                        break
+                        
+            if encontrada_path:
+                out_dir.mkdir(exist_ok=True)
+                
+                # Z Relativo via GPS!
+                alt_encontrada = extract_gps_altitude(encontrada_path)
+                
+                before_path = image_cache.get(_normalize_filename(before_name))
+                alt_before = extract_gps_altitude(before_path) if before_path else None
+                
+                location = 0.0
+                loc_type = "Média Interp."
+                
+                if alt_encontrada is not None and alt_before is not None:
+                    try:
+                        loc_before = float(before.get("image_metadata", {}).get("location", 0))
+                        diff_m = abs(float(alt_encontrada) - float(alt_before))
+                        location = loc_before + (diff_m * 1000) # mm
+                        loc_type = "GPS Precisão"
+                    except:
+                        pass
+                
+                if location == 0.0:
+                    try:
+                        loc1 = float(before.get("image_metadata", {}).get("location", 0))
+                        loc2 = float(after.get("image_metadata", {}).get("location", 0))
+                        location = (loc1 + loc2) / 2
+                    except:
+                        pass
+                        
+                px_1 = float(before.get("image_metadata", {}).get("pixel_size", 0))
+                px_2 = float(after.get("image_metadata", {}).get("pixel_size", 0))
+                pixel_size = (px_1 + px_2) / 2
+                
+                turbine_name = data.get("turbine_name", "UNKNOWN")
+                blade_sn = before.get("blade_sn", "UNKNOWN")
+                
+                new_fn = f"{turbine_name}_{blade_sn}_{region}_{location:.2f}_{pixel_size:.3f}_{encontrada_path.name}"
+                dest_path = out_dir / new_fn
+                
+                import shutil
+                shutil.copy2(encontrada_path, dest_path)
+                log_fn(f"✔ Recuperada: {encontrada_path.name} -> {new_fn} (Z via {loc_type})", "success")
+                
+                resultados.append({
+                    "region": region,
+                    "location": round(location, 2),
+                    "pixel_size": round(pixel_size, 3),
+                    "turbine_name": turbine_name,
+                    "blade_sn": blade_sn,
+                    "image": encontrada_path.name
+                })
+                
+    if resultados:
+        import csv
+        csv_path = out_dir / "relatorio_fotos_recuperadas.csv"
+        with open(csv_path, "w", newline="", encoding="utf-8-sig") as f:
+            writer = csv.DictWriter(f, fieldnames=resultados[0].keys(), delimiter=';')
+            writer.writeheader()
+            writer.writerows(resultados)
+        log_fn(f"Operação concluída. {len(resultados)} fotos salvas na pasta: {out_dir.name}", "success")
+    else:
+        log_fn("Nenhuma foto faltando foi detectada ou recuperada.", "warning")
 
 # ─── Módulo 4 — Processar JSON ────────────────────────────────────────────────
 

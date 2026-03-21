@@ -10,6 +10,7 @@ translations = {
         "option_4": "4 - Processar JSON → CSVs da pá",
         "option_5": "5 - Organizar fotos usando JSON como mapa",
         "option_6": "6 - Documentação",
+        "option_7": "7 - Corrigir JSON (Dividir Pás Misturadas)",
         "option_0": "0 - Sair",
         "exit_message": "Saindo... Bom S&R! 🚁",
         "drag_csv": "Arraste o CSV aqui ou digite o caminho:",
@@ -53,6 +54,9 @@ translations = {
 6 - Documentação
    Esta tela
 
+7 - Corrigir JSON (Dividir Pás Misturadas)
+   Identifica falhas de gravação do JSON do DJI dividindo as posições misturadas.
+
 Dicas gerais:
 - Arraste arquivos/pastas para o terminal (funciona no Konsole, Kitty, Windows Terminal)
 - OUTPUT sempre criado na mesma pasta do CSV arrastado
@@ -71,6 +75,7 @@ Dicas gerais:
         "option_4": "4 - Process JSON → Blade CSVs",
         "option_5": "5 - Organize photos using JSON",
         "option_6": "6 - Documentation",
+        "option_7": "7 - Fix JSON (Split Mixed Blades)",
         "option_0": "0 - Exit",
         "exit_message": "Exiting... Good S&R! 🚁",
         "drag_csv": "Drag the CSV here or type the path:",
@@ -112,6 +117,9 @@ Dicas gerais:
 
 6 - Documentation
    This screen
+
+7 - Fix JSON (Split Mixed Blades)
+   Identifies and splits DJI recording failures where blades were mixed.
 
 Tips:
 - Drag files/folders to terminal

@@ -18,6 +18,7 @@ from extract_gps_z import extrair_gps_z
 from process_json import process_json_para_csvs
 from organize_json_photos import organizar_fotos_pelo_json
 from documentation import documentacao
+from fix_blade_split import fix_blade_split_cli
 
 def mostrar_menu(lang="pt"):
     print(Fore.CYAN + "\n" + "="*60 + Style.RESET_ALL)
@@ -29,6 +30,7 @@ def mostrar_menu(lang="pt"):
     print(Fore.GREEN + t("option_4", lang) + Style.RESET_ALL)
     print(Fore.GREEN + t("option_5", lang) + Style.RESET_ALL)
     print(Fore.GREEN + t("option_6", lang) + Style.RESET_ALL)
+    print(Fore.GREEN + t("option_7", lang) + Style.RESET_ALL)
     print(Fore.RED + t("option_0", lang) + Style.RESET_ALL)
     print("\nDigite o número: ", end="")
 
@@ -56,6 +58,8 @@ def main():
             organizar_fotos_pelo_json(lang)
         elif opcao == "6":
             documentacao(lang)
+        elif opcao == "7":
+            fix_blade_split_cli(lang)
         elif opcao == "0":
             print(Fore.YELLOW + t("exit_message", lang) + Style.RESET_ALL)
             sys.exit(0)

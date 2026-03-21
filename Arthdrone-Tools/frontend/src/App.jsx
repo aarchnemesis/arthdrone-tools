@@ -44,8 +44,9 @@ export default function ArthdroneTools() {
   const {
     logs, running, ran, progress, lastOutput,
     gpsLoading, gpsFotos, setGpsFotos,
+    bladeSplitLoading, bladeSplitSuspeitos, setBladeSplitSuspeitos,
     clearLogs, handleRun, pickInput,
-    carregarFotosGps, openFolder,
+    carregarFotosGps, carregarBladeSplit, openFolder,
     isPyWebView,
   } = usePyWebView();
 
@@ -139,7 +140,10 @@ export default function ArthdroneTools() {
               running={running} ran={ran} lastOutput={lastOutput}
               gpsLoading={gpsLoading} gpsFotos={gpsFotos}
               gpsRaiz={gpsRaiz} setGpsRaiz={setGpsRaiz}
+              bladeSplitLoading={bladeSplitLoading} bladeSplitSuspeitos={bladeSplitSuspeitos}
+              setBladeSplitSuspeitos={setBladeSplitSuspeitos}
               onPickInput={pickInput} onCarregarGps={carregarFotosGps}
+              onCarregarBladeSplit={carregarBladeSplit}
               onRun={onRun} onOpenFolder={openFolder}
               isPyWebView={isPyWebView}
             />

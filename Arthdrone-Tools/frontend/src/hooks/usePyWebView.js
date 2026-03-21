@@ -21,9 +21,19 @@ export default function usePyWebView() {
   const [lastOutput, setLastOutput] = useState("");
   const [gpsLoading, setGpsLoading] = useState(false);
   const [gpsFotos, setGpsFotos] = useState([]);
+  const [bladeSplitLoading, setBladeSplitLoading] = useState(false);
+  const [bladeSplitSuspeitos, setBladeSplitSuspeitos] = useState([]);
   const safetyTimerRef = useRef(null);
 
-  const isPyWebView = typeof window.pywebview !== "undefined";
+  const [isPyWebView, setIsPyWebView] = useState(typeof window.pywebview !== "undefined");
+
+  useEffect(() => {
+    if (typeof window.pywebview !== "undefined") {
+      setIsPyWebView(true);
+    } else {
+      window.addEventListener("pywebviewready", () => setIsPyWebView(true));
+    }
+  }, []);
 
   const clearLogs = useCallback(() => {
     setLogs([]);
@@ -87,15 +97,29 @@ export default function usePyWebView() {
       const csvPath  = filePaths["csv_file"]  || "";
       const fotosDir = filePaths["photos_dir"] || "";
       const jsonPath = filePaths["json_file"]  || "";
+      const dataFile = filePaths["data_file"] || "";
       const modo     = (options["mode"] || "P").includes("R") ? "R" : "P";
       const dryRun   = ["Sim", "Yes"].includes(options["dry_run"] || "");
       const xlsx     = ["Sim", "Yes"].includes(options["gen_xlsx"] || "");
 
+      // Mapeamento de ids baseados em translations.js
+      // 1: Organizar Imagens (CSV)
+      // 2: Process JSON
+      // 3: Organizar Fotos
+      // 4: Converter CSV
+      // 5: GPS + Relative Z
+      // 6: Fix Blade Split
+      // 7: Fix Z=0
+      // 8: Recover Lost Photos
+      
       if      (active === 1) api.organizar_imagens(csvPath, fotosDir, modo, dryRun);
-      else if (active === 2) api.converter_csv(csvPath, xlsx);
-      else if (active === 3) api.extrair_gps_z(fotosDir, gpsRaiz);
-      else if (active === 4) api.processar_json(jsonPath);
-      else if (active === 5) api.organizar_fotos(jsonPath, fotosDir);
+      else if (active === 2) api.processar_json(jsonPath);
+      else if (active === 3) api.organizar_fotos(jsonPath, fotosDir);
+      else if (active === 4) api.converter_csv(csvPath, xlsx);
+      else if (active === 5) api.extrair_gps_z(fotosDir, gpsRaiz);
+      else if (active === 6) api.corrigir_blade_split(dataFile, options.correcoes || []);
+      else if (active === 7) api.corrigir_z_zero(csvPath, fotosDir, gpsRaiz);
+      else if (active === 8) api.recuperar_fotos_perdidas(jsonPath, fotosDir);
       return;
     }
 
@@ -118,14 +142,14 @@ export default function usePyWebView() {
   }, [isPyWebView, addLog]);
 
   const pickInput = useCallback(async (inp) => {
-    if (!isPyWebView) {
-      return `C:\\Demo\\arquivo.${inp.fileType || "csv"}`;
+    if (typeof window.pywebview === "undefined") {
+      return ""; // Evita carregar dados de demo acidentalmente se a UI foi mais rapida q o webview backend
     }
     const path = inp.type === "folder"
       ? await window.pywebview.api.pick_folder()
       : await window.pywebview.api.pick_file(inp.fileType || "all");
     return path || "";
-  }, [isPyWebView]);
+  }, []);
 
   const carregarFotosGps = useCallback((pasta) => {
     if (!pasta) return;
@@ -154,6 +178,43 @@ export default function usePyWebView() {
     }
   }, [isPyWebView]);
 
+  const carregarBladeSplit = useCallback((jsonPath) => {
+    if (!jsonPath) return;
+    setBladeSplitLoading(true);
+    setBladeSplitSuspeitos([]);
+    clearLogs(); // Clear output area
+    addLog({ type: "info", text: "Iniciando análise de dados..." }); // initial message
+
+    if (isPyWebView) {
+      const onLog = (e) => addLog(e.detail);
+      const onLoaded = (e) => {
+        setBladeSplitSuspeitos(e.detail.suspeitos || []);
+        setBladeSplitLoading(false);
+        window.removeEventListener("blade_split_analise", onLoaded);
+        window.removeEventListener("arthlog", onLog);
+        addLog({ type: "success", text: "Análise concluída." });
+      };
+      
+      window.addEventListener("arthlog", onLog);
+      window.addEventListener("blade_split_analise", onLoaded);
+      window.pywebview.api.analisar_blade_split(jsonPath, 0);
+    } else {
+      setTimeout(() => {
+        setBladeSplitSuspeitos([
+          {
+            blade_position: 'A',
+            total_fotos: 1400,
+            gap_seconds: 400,
+            split_index_sorted: 700,
+            itens_com_tempo: []
+          }
+        ]);
+        setBladeSplitLoading(false);
+        addLog({ type: "success", text: "Análise simulada concluída." });
+      }, 800);
+    }
+  }, [isPyWebView, clearLogs, addLog]);
+
   const openFolder = useCallback((path) => {
     if (isPyWebView && path) {
       window.pywebview.api.open_folder(path);
@@ -170,8 +231,9 @@ export default function usePyWebView() {
   return {
     logs, running, ran, progress, lastOutput,
     gpsLoading, gpsFotos, setGpsFotos,
+    bladeSplitLoading, bladeSplitSuspeitos, setBladeSplitSuspeitos,
     clearLogs, handleRun, pickInput,
-    carregarFotosGps, openFolder,
+    carregarFotosGps, carregarBladeSplit, openFolder,
     isPyWebView,
   };
 }

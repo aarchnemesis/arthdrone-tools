@@ -28,7 +28,7 @@ export default function TopBar({ T, D, lang, darkMode, setDarkMode, toggleLang }
         <div className="topbar-divider" style={{ background: D.border }} />
         <div className="topbar-status">
           <div className="topbar-status-dot" />
-          <span className="topbar-version" style={{ color: D.textMuted }}>v3.0</span>
+          <span className="topbar-version" style={{ color: D.textMuted }}>v4.0.0</span>
         </div>
         <button
           className="topbar-lang-btn"

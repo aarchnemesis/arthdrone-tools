@@ -9,7 +9,9 @@ from api_functions import (
     extrair_gps_z_api,
     process_json_api,
     organizar_fotos_api,
+    corrigir_z_zero_csv_api
 )
+from fix_blade_split_api import analisar_json_api, corrigir_blade_split_api, analisar_csv_api, corrigir_csv_api
 
 
 class ArthdroneAPI:
@@ -148,6 +150,72 @@ class ArthdroneAPI:
         def run():
             try:
                 organizar_fotos_api(json_path=json_path, source_folder=fotos_dir, log_fn=self._log)
+            except Exception as e:
+                self._log(f"Erro inesperado: {e}", "error")
+            finally:
+                self._emit("arthdone", {})
+        threading.Thread(target=run, daemon=True).start()
+
+    # ─── Módulo 7 — Corrigir Blade Split ─────────────────────────────────────
+
+    def analisar_blade_split(self, file_path: str, threshold: int = 800):
+        def run():
+            try:
+                if str(file_path).lower().endswith('.csv'):
+                    resultados = analisar_csv_api(csv_path=file_path, threshold=threshold, log_fn=self._log)
+                else:
+                    resultados = analisar_json_api(json_path=file_path, threshold=threshold, log_fn=self._log)
+                    
+                # Convert datetime inside resultados before emit
+                safe_resultados = []
+                for s in resultados:
+                    novo_s = s.copy()
+                    itens_safe = []
+                    for i in novo_s['itens_com_tempo']:
+                        i_safe = i.copy()
+                        i_safe['dt'] = str(i_safe['dt'])
+                        itens_safe.append(i_safe)
+                    novo_s['itens_com_tempo'] = itens_safe
+                    safe_resultados.append(novo_s)
+            except Exception as e:
+                self._log(f"Erro inesperado: {e}", "error")
+                safe_resultados = []
+            finally:
+                self._emit("blade_split_analise", {"suspeitos": safe_resultados})
+                self._emit("arthdone", {})
+        threading.Thread(target=run, daemon=True).start()
+
+    def corrigir_blade_split(self, file_path: str, correcoes: list):
+        def run():
+            try:
+                if str(file_path).lower().endswith('.csv'):
+                    corrigir_csv_api(csv_path=file_path, correcoes=correcoes, log_fn=self._log)
+                else:
+                    corrigir_blade_split_api(json_path=file_path, correcoes=correcoes, log_fn=self._log)
+            except Exception as e:
+                self._log(f"Erro inesperado: {e}", "error")
+            finally:
+                self._emit("arthdone", {})
+        threading.Thread(target=run, daemon=True).start()
+    # ─── Módulo 8 — Corrigir Z Zero CSV ──────────────────────────────────────
+    
+    def corrigir_z_zero(self, csv_path: str, fotos_dir: str, raiz_nome: str):
+        def run():
+            try:
+                corrigir_z_zero_csv_api(csv_path=csv_path, fotos_dir=fotos_dir, raiz_nome=raiz_nome, log_fn=self._log)
+            except Exception as e:
+                self._log(f"Erro inesperado: {e}", "error")
+            finally:
+                self._emit("arthdone", {})
+        threading.Thread(target=run, daemon=True).start()
+
+    # ─── Módulo 9 — Recuperar Fotos Perdidas ─────────────────────────────────
+    
+    def recuperar_fotos_perdidas(self, json_path: str, fotos_dir: str):
+        def run():
+            try:
+                from api_functions import recuperar_fotos_perdidas_api
+                recuperar_fotos_perdidas_api(json_path=json_path, fotos_dir=fotos_dir, log_fn=self._log)
             except Exception as e:
                 self._log(f"Erro inesperado: {e}", "error")
             finally:

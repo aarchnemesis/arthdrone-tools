@@ -321,6 +321,7 @@ html, body, #root {
   padding: 20px 26px;
   overflow-y: auto;
   flex: 1;
+  min-width: 0; /* Impede transbordo flex em nomes longos */
 }
 
 .form-group {
@@ -339,6 +340,8 @@ html, body, #root {
   display: flex;
   gap: 8px;
   align-items: center;
+  width: 100%;
+  min-width: 0; /* Impede esticamento do flexbox */
 }
 
 .input-field {
@@ -354,6 +357,7 @@ html, body, #root {
   cursor: pointer;
   transition: all 0.18s;
   color: var(--text-muted);
+  min-width: 0; /* Garante text-overflow ellipsis correto no filho */
 }
 
 .input-field:hover {
@@ -442,6 +446,7 @@ html, body, #root {
   gap: 24px;
   margin-bottom: 20px;
   flex-wrap: wrap;
+  min-width: 0;
 }
 
 .pill-group {

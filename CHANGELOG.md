@@ -5,6 +5,25 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ---
 
+## [4.0.0] — 2026-03-20
+
+### 🚀 Novidades (Novos Motores de Contingência)
+- **Módulo 8 — Recuperar Fotos Perdidas:** Novo motor autônomo que varre o SD Card inteiro atrás de fotos fantasmas com base no JSON da turbina. Ele recalcula o Z (Location) da foto recuperada usando cruzeiamento de Altitude GPS exata (EXIF) da foto limítrofe, preenchendo falhas do drone automaticamente.
+- **Módulo 7 — Corrigir Z (Location) Zerado:** Ferramenta cirúrgica para reparar relatórios CSV da plataforma que perderam rastreio de Location. Usa dados de GPS brutos das fotos afetadas para restaurar os milímetros perdidos.
+
+### ✨ Melhorias de UX e UI
+- **Rebranding de Escopo:** O aplicativo agora assume a identidade mais abrangente de "Automação S&R de Externas".
+- **Sistema de Categorias (Sidebar):** Módulos agrupados de forma inteligente em "Fluxo S&R", "Ferramentas", "Correções" e "Suporte".
+- **Documentação Acordeão:** Módulo de documentação redesenhado para um sistema colapsável (accordion) muito mais limpo e amigável.
+- **Layout Resiliente:** Corrigido bug crítico de CSS onde nomes de arquivos/caminhos muito longos "empurravam" os botões de ação para fora da tela. Adicionado *tooltip* nativo no hover dos inputs de caminho cortado.
+
+### ⚙️ Core e Algoritmos
+- **Precisão do Blade Split (Módulo 6):** Limite de tolerância de tempo (gap) ajustado de 10 segundos para 60 segundos, erradicando falsos-positivos por manobras normais do drone.
+- **Leitura Resiliente do LibreOffice:** `pandas` agora re-detecta e ajusta perfeitamente o separador de CSV se o arquivo foi salvo corrompido ou com vírgulas pelo LibreOffice.
+- **Bugfix Crítico Multithreading:** Módulos de *Blade Split* e *Recuperar Fotos* no PyWebView reparados — threads agora efetuam `start()` de forma correta e síncrona com o front-end, evitando congelamento infinito de UI.
+
+---
+
 ## [3.0.0] — 2026-03-12
 
 ### 🏗️ Arquitetura
